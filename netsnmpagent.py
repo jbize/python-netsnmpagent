@@ -591,7 +591,7 @@ class netsnmpAgent(object):
 
 			def getRow(self, idxobjs):
 				'''Return existing TableRow in Table'''
-				return self._addRow(idxobjs, getExistingRow=True)
+				return self._addRow(idxobjs, _getExistingRow=True)
 
 			def addRow(self, idxobjs):
 				'''Return a new TableRow in Table'''
@@ -641,7 +641,7 @@ class netsnmpAgent(object):
 						if result != SNMPERR_SUCCESS:
 							raise netsnmpAgentException("netsnmp_set_row_column() failed with error code {0}!".format(result))
 
-				# I don't like this aproach, but without some refactoringm this get's me an existing TableRow
+				# I don't like this aproach, but without some refactoring, this get's me an existing TableRow
 				if _getExistingRow:
 					return TableRow._fromExistingRow(self._getRow(idxobjs))
 
