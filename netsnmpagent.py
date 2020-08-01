@@ -23,6 +23,7 @@ from collections import defaultdict
 from netsnmpapi import *
 import netsnmpvartypes
 
+
 # Helper function courtesy of Alec Thomas and taken from
 # http://stackoverflow.com/questions/36932/how-can-i-represent-an-enum-in-python
 def enum(*sequential, **named):
@@ -33,17 +34,19 @@ def enum(*sequential, **named):
 	except AttributeError:
 		# Python 3.x
 		enums_iterator = enums.items()
-	enums["Names"] = dict((value,key) for key, value in enums_iterator)
+	enums["Names"] = dict((value, key) for key, value in enums_iterator)
 	return type("Enum", (), enums)
+
 
 # Indicates the status of a netsnmpAgent object
 netsnmpAgentStatus = enum(
-	"REGISTRATION",     # Unconnected, SNMP object registrations possible
-	"FIRSTCONNECT",     # No more registrations, first connection attempt
-	"CONNECTFAILED",    # Error connecting to snmpd
-	"CONNECTED",        # Connected to a running snmpd instance
-	"RECONNECTING",     # Got disconnected, trying to reconnect
+	"REGISTRATION",  # Unconnected, SNMP object registrations possible
+	"FIRSTCONNECT",  # No more registrations, first connection attempt
+	"CONNECTFAILED",  # Error connecting to snmpd
+	"CONNECTED",  # Connected to a running snmpd instance
+	"RECONNECTING",  # Got disconnected, trying to reconnect
 )
+
 
 def _build_callback_handler(callback):
 	""" Helper function to create callback handler for the net-snmp API """
@@ -372,7 +375,8 @@ class netsnmpAgent(object):
 			setattr(self, vartype_cls.__name__, cls_wrapper)
 
 	def _generateVarTypeClassWrapper(self, vartype_cls, default_initval):
-		def _cls_wrapper(initval = default_initval, oidstr = None, writable = True, context = "", callback = None):
+
+		def _cls_wrapper(initval=default_initval, oidstr=None, writable=True, context="", callback=None):
 			# Get instance of VarType-inheriting class
 			cls_inst = vartype_cls(initval)
 
@@ -423,8 +427,8 @@ class netsnmpAgent(object):
 
 			return cls_inst
 
-		_cls_wrapper.__name__         = vartype_cls.__name__
-		_cls_wrapper.__doc__          = vartype_cls.__doc__
+		_cls_wrapper.__name__ = vartype_cls.__name__
+		_cls_wrapper.__doc__ = vartype_cls.__doc__
 
 		return _cls_wrapper
 
@@ -452,29 +456,30 @@ class netsnmpAgent(object):
 				ctypes.byref(oid_len)
 			) == 0:
 				raise netsnmpAgentException("read_objid({0}) failed!".format(oidstr))
-			
+
 			# trim trailing zeroes in oid array
 			trimOID = c_oid * oid_len.value
-			oid = trimOID( *oid[0:oid_len.value] )
+			oid = trimOID(*oid[0:oid_len.value])
 		else:
 			# Interpret the given oidstr as the oid itself.
 			try:
 				# The error on this line was annoying
-				#parts = [c_oid(long(x) if sys.version_info <= (3,) else int(x)) for x in oidstr.split('.')]
+				# parts = [c_oid(long(x) if sys.version_info <= (3,) else int(x)) for x in oidstr.split('.')]
 				if sys.version_info <= (3,):
+
 					def long(obj):
 						return int(obj)
+
 				parts = [c_oid(long(x)) for x in oidstr.split('.')]
 			except ValueError:
 				raise netsnmpAgentException("Invalid OID (not using MIB): {0}".format(oidstr))
 
 			oid = (c_oid * len(parts))(*parts)
 			oid_len = ctypes.c_size_t(len(parts))
-		
+
 		return (oid, oid_len)
 
-
-	def _prepareRegistration(self, oidstr, writable = True, callback_handler = None):
+	def _prepareRegistration(self, oidstr, writable=True, callback_handler=None):
 		""" Prepares the registration of an SNMP object.
 
 		    "oidstr" is the OID to register the object at.
@@ -485,7 +490,7 @@ class netsnmpAgent(object):
 			raise netsnmpAgentException("Attempt to register SNMP object " \
 			                            "after agent has been started!")
 
-		(oid, oid_len) = self._prepareOID( oidstr )
+		(oid, oid_len) = self._prepareOID(oidstr)
 
 		# Do we allow SNMP SETting to this OID?
 		handler_modes = HANDLER_CAN_RWRITE if writable \
@@ -497,7 +502,7 @@ class netsnmpAgent(object):
 		# left to net-snmp.
 		handler_reginfo = libnsa.netsnmp_create_handler_registration(
 			b(oidstr),
-			None,	# the callback_handler would go here
+			None,  # the callback_handler would go here
 			oid,
 			oid_len,
 			handler_modes
@@ -505,11 +510,12 @@ class netsnmpAgent(object):
 
 		return handler_reginfo
 
-	def Table(self, oidstr, indexes, columns, counterobj = None, extendable = False, context = "", callback = None):
+	def Table(self, oidstr, indexes, columns, counterobj=None, extendable=False, context="", callback=None):
 		agent = self
 
 		# Define a Python class to provide access to the table.
 		class Table(object):
+
 			def __init__(self, oidstr, idxobjs, coldefs, counterobj, extendable, context):
 				# Create a netsnmp_table_data_set structure, representing both
 				# the table definition and the data stored inside it. We use the
@@ -527,8 +533,8 @@ class netsnmpAgent(object):
 
 				# Define the table's columns and their default values
 				for coldef in coldefs:
-					colno    = coldef[0]
-					defobj   = coldef[1]
+					colno = coldef[0]
+					defobj = coldef[1]
 					writable = coldef[2] if len(coldef) > 2 \
 					                     else 0
 
@@ -557,11 +563,11 @@ class netsnmpAgent(object):
 
 				self._handler_reginfo = agent._prepareRegistration(oidstr, extendable)
 				self._handler_reginfo.contents.contextName = b(context)
-				
+
 				# We need to inject the callback_handler before registering the table_data_set
 				if self._callback_handler is not None:
 					_inject_custom_handler(self._callback_handler, self._handler_reginfo)
-				
+
 				result = libnsX.netsnmp_register_table_data_set(
 					self._handler_reginfo,
 					self._dataset,
@@ -582,13 +588,13 @@ class netsnmpAgent(object):
 				if counterobj:
 					counterobj.update(0)
 				self._counterobj = counterobj
-				
-				
-			def addRow(self, idxobjs):
+
+			def addRow(self, idxobjs, getExistingRow=False):
 				dataset = self._dataset
 
 				# Define a Python class to provide access to the table row.
 				class TableRow(object):
+
 					def __init__(self, idxobjs):
 						# Create the netsnmp_table_set_storage structure for
 						# this row.
@@ -609,6 +615,12 @@ class netsnmpAgent(object):
 							if result == None:
 								raise netsnmpAgentException("snmp_varlist_add_variable() failed!")
 
+					@classmethod
+					def _fromExistingRow(cls, row):
+						tableRow = cls.__new__(cls)
+						tableRow._table_row = row
+						return tableRow
+
 					def setRowCell(self, column, snmpobj):
 						result = libnsX.netsnmp_set_row_column(
 							self._table_row,
@@ -620,10 +632,14 @@ class netsnmpAgent(object):
 						if result != SNMPERR_SUCCESS:
 							raise netsnmpAgentException("netsnmp_set_row_column() failed with error code {0}!".format(result))
 
+				# I don't like this aproach, but without some refactoringm this get's me an existing TableRow
+				if getExistingRow:
+					return TableRow._fromExistingRow(self._getRow(idxobjs))
+
 				row = TableRow(idxobjs)
 
 				libnsX.netsnmp_table_dataset_add_row(
-					dataset,        # *table
+					dataset,  # *table
 					row._table_row  # row
 				)
 
@@ -661,7 +677,7 @@ class netsnmpAgent(object):
 							retdict[0][int(col.contents.column)]["value"] = u(ctypes.string_at(col.contents.data.string, col.contents.data_len))
 						elif col.contents.type == ASN_IPADDRESS:
 							uint_value = ctypes.cast(
-								(ctypes.c_int*1)(col.contents.data.integer.contents.value),
+								(ctypes.c_int * 1)(col.contents.data.integer.contents.value),
 								ctypes.POINTER(ctypes.c_uint)
 							).contents.value
 							retdict[0][int(col.contents.column)]["value"] = socket.inet_ntoa(struct.pack("I", uint_value))
@@ -682,7 +698,7 @@ class netsnmpAgent(object):
 					# not changed.
 
 					indices = self._getIndices(row)
-					#print("in value(), indices={}".format(indices))
+					# print("in value(), indices={}".format(indices))
 
 					# Finally, iterate over all columns for this row and add
 					# stored data, if present
@@ -695,7 +711,7 @@ class netsnmpAgent(object):
 							elif data.contents.type == ASN_COUNTER64:
 								retdict[indices][int(data.contents.column)] = data.contents.data.counter64.contents.value
 							elif data.contents.type == ASN_IPADDRESS:
-								uint_value = ctypes.cast((ctypes.c_int*1)(
+								uint_value = ctypes.cast((ctypes.c_int * 1)(
 									data.contents.data.integer.contents.value),
 									ctypes.POINTER(ctypes.c_uint)
 									).contents.value
@@ -781,11 +797,11 @@ class netsnmpAgent(object):
 			# If so, the entire row becomes "stale" and subsequent "TableRow1.setRowCell()" to any
 			# column in the stored row will likely cause A Segment violation.
 			# As a workaround, this method was created to traverse rows from the table each time.
-			def _getRow(self, indices = []):
+			def _getRow(self, indices=[]):
 				row = self._dataset.contents.table.contents.first_row
 				matchStr = 	'.'.join(str(x) for x in indices)
 				rowIndices = self._getIndices(row)
-				
+
 				while bool(row) and matchStr != rowIndices:
 					row = row.contents.next
 					rowIndices = self._getIndices(row)
@@ -823,7 +839,7 @@ class netsnmpAgent(object):
 
 		return self._objs.keys()
 
-	def getRegistered(self, context = ""):
+	def getRegistered(self, context=""):
 		""" Returns a dictionary with the currently registered SNMP objects.
 
 		    Returned is a dictionary objects for the specified "context",
@@ -868,7 +884,7 @@ class netsnmpAgent(object):
 		# being. All net-snmp versions up to and including 5.7.3 are unable
 		# to do proper cleanup and cause issues such as double free()s so that
 		# one effectively has to rely on the OS to release resources.
-		#libnsa.shutdown_agent()
+		# libnsa.shutdown_agent()
 
 	def send_trap(self, *args, **kwargs):
 		'''Send SNMP traps
@@ -894,36 +910,36 @@ class netsnmpAgent(object):
 					context = <context>
 				)
 		'''
-		
+
 		agent = self
-		
+
 		class snmp_pdu(object):
 			""" clas for handling SNMP PDU objects """
-			
+
 			pdu = None
-			
-			def __init__(self, pduType = SNMP_MSG_TRAP2):
+
+			def __init__(self, pduType=SNMP_MSG_TRAP2):
 				"""create PDU object """
 				self.pdu = libnsX.snmp_pdu_create(SNMP_MSG_TRAP2)
-			
+
 			def __del__(self):
 				""" destructor """
 				if self.pdu:
 					self.free()
-			
+
 			def free(self):
 				""" free PDU struct """
 				if self.pdu:
 					libnsX.snmp_free_pdu(self.pdu)
 					self.pdu = None
-			
+
 			def variables(self):
 				""" function variables()
 				
 				    return netsnmp_variable_list pointer from PDU
 				"""
 				return self.pdu.contents.variables
-			
+
 			def _humanToASNtype(self, varType):
 				""" convert ASN type name to compatible for snmp_add_var()
 					type char
@@ -935,11 +951,11 @@ class netsnmpAgent(object):
 					varTypeL = varType.lower()
 					if varTypeL[0:3] == 'hex':
 						varType = 'x'
-					elif varTypeL[0:3] in ('obj','oid'):
+					elif varTypeL[0:3] in ('obj', 'oid'):
 						varType = 'o'
 					elif varTypeL[0:4] == 'uinteger':
 						varType = '3'
-					elif varTypeL in ('gauge','unsigned32'):
+					elif varTypeL in ('gauge', 'unsigned32'):
 						varType = 'u'
 					elif varTypeL[0:2] == 'ip':
 						varType = 'a'
@@ -947,13 +963,13 @@ class netsnmpAgent(object):
 						varType = 'd'
 					elif varTypeL == 'counter64':
 						varType = 'C'
-					elif varTypeL in ('integer','integer32'):
+					elif varTypeL in ('integer', 'integer32'):
 						varType = 'i'
 					elif varType[0] == 'B':
 						varType = 'b'
 				return varType[0]
-			
-			def add(self, varOID, varData, varType = '='):
+
+			def add(self, varOID, varData, varType='='):
 				"""add OID value to PDU list
 					varType can be any of the following chars:"
 						i for INTEGER, INTEGER32
@@ -971,9 +987,9 @@ class netsnmpAgent(object):
 						b for BITS
 						= undocumented autodetect feature to get MIB 'SYNTAX' definition
 				"""
-				
+
 				varType = self._humanToASNtype(varType)
-				
+
 				(varOid, varOidLen) = agent._prepareOID(varOID)
 				ret = 255
 				while ret:
@@ -990,23 +1006,23 @@ class netsnmpAgent(object):
 							print("ZDBG: ret={0}".format(ret))
 						else:
 							break
-				
+
 				return ret
-		
+
 		trap = kwargs.get('trap')
 		specific = kwargs.get('specific')
 		oid = kwargs.get('oid')
 		traps = kwargs.get('traps')
 		context = kwargs.get('context')
 		uptime = kwargs.get('uptime')
-		
+
 		if oid:
 			# send itrap SNMPv2 or SNMPv3
 			pdu = snmp_pdu()
-			
+
 			if uptime:
 				pdu.add('SNMPv2-MIB::sysUpTime.0', uptime, 't')
-			
+
 			result = pdu.add('SNMPv2-MIB::snmpTrapOID.0', oid)
 			if result != 0:
 				msg = "Failed to add {0} as snmpTrapOID!".format(oid)
@@ -1030,13 +1046,13 @@ class netsnmpAgent(object):
 					else:
 						msg = "missing 'oid' key in trap list!"
 						raise netsnmpAgentException(msg)
-						
+
 				variables = pdu.variables()
 				if context:
 					# SNMPv3 trap have context
 					# WARNING - I replaced commented code... I believe it's correct
-					###context = ctype.c_char_p(context)
-					###libnsa.send_v3trap(variables, context)
+					# ##context = ctype.c_char_p(context)
+					# ##libnsa.send_v3trap(variables, context)
 					libnsa.send_v3trap(variables, b(context))
 				else:
 					# SNMPv2 trap
@@ -1050,6 +1066,7 @@ class netsnmpAgent(object):
 				trap = ctypes.c_int(args[0])
 				specific = ctypes.c_int(args[1])
 			libnsa.send_easy_trap(trap, specific)
+
 
 class netsnmpAgentException(Exception):
 	pass
