@@ -589,7 +589,16 @@ class netsnmpAgent(object):
 					counterobj.update(0)
 				self._counterobj = counterobj
 
-			def addRow(self, idxobjs, getExistingRow=False):
+			def getRow(self, idxobjs):
+				'''Return existing TableRow in Table'''
+				return self._addRow(idxobjs, getExistingRow=True)
+
+			def addRow(self, idxobjs):
+				'''Return a new TableRow in Table'''
+				return self._addRow(idxobjs)
+
+			def _addRow(self, idxobjs, _getExistingRow=False):
+				'''Return a new or existing TableRow in Table'''
 				dataset = self._dataset
 
 				# Define a Python class to provide access to the table row.
@@ -633,7 +642,7 @@ class netsnmpAgent(object):
 							raise netsnmpAgentException("netsnmp_set_row_column() failed with error code {0}!".format(result))
 
 				# I don't like this aproach, but without some refactoringm this get's me an existing TableRow
-				if getExistingRow:
+				if _getExistingRow:
 					return TableRow._fromExistingRow(self._getRow(idxobjs))
 
 				row = TableRow(idxobjs)
