@@ -74,10 +74,10 @@ rows, columns = os.popen("stty size", "r").read().split()
 # don't have to copy the MIB to /usr/share/snmp/mibs.
 try:
 	agent = netsnmpagent.netsnmpAgent(
-		AgentName      = "SimpleAgent",
-		MasterSocket   = options.mastersocket,
-		PersistenceDir = options.persistencedir,
-		MIBFiles       = [ os.path.abspath(os.path.dirname(sys.argv[0])) +
+		AgentName="SimpleAgent",
+		MasterSocket=options.mastersocket,
+		PersistenceDir=options.persistencedir,
+		MIBFiles=[ os.path.abspath(os.path.dirname(sys.argv[0])) +
 		                   "/SIMPLE-MIB.txt" ]
 	)
 except netsnmpagent.netsnmpAgentException as e:
@@ -86,78 +86,78 @@ except netsnmpagent.netsnmpAgentException as e:
 
 # Then we create all SNMP scalar variables we're willing to serve.
 simpleInteger = agent.Integer32(
-	oidstr   = "SIMPLE-MIB::simpleInteger"
+	oidstr="SIMPLE-MIB::simpleInteger"
 )
 simpleIntegerContext1 = agent.Integer32(
-	oidstr   = "SIMPLE-MIB::simpleInteger",
-	context  = "context1",
-	initval  = 200,
+	oidstr="SIMPLE-MIB::simpleInteger",
+	context="context1",
+	initval=200,
 )
 simpleIntegerRO = agent.Integer32(
-	oidstr   = "SIMPLE-MIB::simpleIntegerRO",
-	writable = False
+	oidstr="SIMPLE-MIB::simpleIntegerRO",
+	writable=False
 )
 simpleUnsigned = agent.Unsigned32(
-	oidstr   = "SIMPLE-MIB::simpleUnsigned"
+	oidstr="SIMPLE-MIB::simpleUnsigned"
 )
 simpleUnsignedRO = agent.Unsigned32(
-	oidstr   = "SIMPLE-MIB::simpleUnsignedRO",
-	writable = False
+	oidstr="SIMPLE-MIB::simpleUnsignedRO",
+	writable=False
 )
 simpleCounter32 = agent.Counter32(
-	oidstr   = "SIMPLE-MIB::simpleCounter32"
+	oidstr="SIMPLE-MIB::simpleCounter32"
 )
 simpleCounter32Context2 = agent.Counter32(
-	oidstr   = "SIMPLE-MIB::simpleCounter32",
-	context  = "context2",
-	initval  = pow(2,32) - 10, # To rule out endianness bugs
+	oidstr="SIMPLE-MIB::simpleCounter32",
+	context="context2",
+	initval=pow(2, 32) - 10,  # To rule out endianness bugs
 )
 simpleCounter64 = agent.Counter64(
-	oidstr   = "SIMPLE-MIB::simpleCounter64"
+	oidstr="SIMPLE-MIB::simpleCounter64"
 )
 simpleCounter64Context2 = agent.Counter64(
-	oidstr   = "SIMPLE-MIB::simpleCounter64",
-	context  = "context2",
-	initval  = pow(2,64) - 10, # To rule out endianness bugs
+	oidstr="SIMPLE-MIB::simpleCounter64",
+	context="context2",
+	initval=pow(2, 64) - 10,  # To rule out endianness bugs
 )
 simpleTimeTicks = agent.TimeTicks(
-	oidstr   = "SIMPLE-MIB::simpleTimeTicks"
+	oidstr="SIMPLE-MIB::simpleTimeTicks"
 )
 simpleIpAddress = agent.IpAddress(
-	oidstr   = "SIMPLE-MIB::simpleIpAddress",
-	initval  = "127.0.0.1"
+	oidstr="SIMPLE-MIB::simpleIpAddress",
+	initval="127.0.0.1"
 )
 simpleFloat = agent.Float(
-	oidstr   = "SIMPLE-MIB::simpleFloat",
-	initval  = 3.4000000953674316
+	oidstr="SIMPLE-MIB::simpleFloat",
+	initval=3.4000000953674316
 )
 simpleOctetString = agent.OctetString(
-	oidstr   = "SIMPLE-MIB::simpleOctetString",
-	initval  = "Hello World"
+	oidstr="SIMPLE-MIB::simpleOctetString",
+	initval="Hello World"
 )
 simpleDisplayString = agent.DisplayString(
-	oidstr   = "SIMPLE-MIB::simpleDisplayString",
-	initval  = "Nice to meet you"
+	oidstr="SIMPLE-MIB::simpleDisplayString",
+	initval="Nice to meet you"
 )
 
 # Create the first table
 firstTable = agent.Table(
-	oidstr  = "SIMPLE-MIB::firstTable",
-	indexes = [
+	oidstr="SIMPLE-MIB::firstTable",
+	indexes=[
 		agent.DisplayString()
 	],
-	columns = [
+	columns=[
 		# Columns begin with an index of 2 here because 1 is actually
 		# used for the single index column above.
 		# We must explicitly specify that the columns should be SNMPSETable.
 		(2, agent.DisplayString("Unknown place"), True),
 		(3, agent.Integer32(0), True)
 	],
-	counterobj = agent.Unsigned32(
-		oidstr = "SIMPLE-MIB::firstTableNumber"
+	counterobj=agent.Unsigned32(
+		oidstr="SIMPLE-MIB::firstTableNumber"
 	),
 	# Allow adding new records
-	extendable = True
+	extendable=True
 )
 
 # Add the first table row
@@ -176,16 +176,16 @@ firstTableRow3.setRowCell(3, agent.Integer32(18))
 
 # Create the second table
 secondTable = agent.Table(
-	oidstr  = "SIMPLE-MIB::secondTable",
-	indexes = [
+	oidstr="SIMPLE-MIB::secondTable",
+	indexes=[
 		agent.Integer32()
 	],
-	columns = [
+	columns=[
 		(2, agent.DisplayString("Unknown interface")),
 		(3, agent.Unsigned32())
 	],
-	counterobj = agent.Unsigned32(
-		oidstr = "SIMPLE-MIB::secondTableNumber"
+	counterobj=agent.Unsigned32(
+		oidstr="SIMPLE-MIB::secondTableNumber"
 	)
 )
 
@@ -201,16 +201,16 @@ secondTableRow2.setRowCell(3, agent.Unsigned32(12842))
 
 # Create the third table
 thirdTable = agent.Table(
-	oidstr     = "SIMPLE-MIB::thirdTable",
-	indexes    = [
+	oidstr="SIMPLE-MIB::thirdTable",
+	indexes=[
 		agent.IpAddress()
 	],
-	columns    = [
+	columns=[
 		(2, agent.DisplayString("Broadcast")),
 		(3, agent.IpAddress("192.168.0.255"))
 	],
-	counterobj = agent.Unsigned32(
-		oidstr = "SIMPLE-MIB::thirdTableNumber"
+	counterobj=agent.Unsigned32(
+		oidstr="SIMPLE-MIB::thirdTableNumber"
 	)
 )
 
@@ -237,6 +237,7 @@ except netsnmpagent.netsnmpAgentException as e:
 
 print("{0}: AgentX connection to snmpd established.".format(prgname))
 
+
 # Helper function that dumps the state of all registered SNMP variables
 def DumpRegistered():
 	for context in agent.getContexts():
@@ -244,20 +245,28 @@ def DumpRegistered():
 		vars = agent.getRegistered(context)
 		pprint.pprint(vars, width=columns)
 		print
+
+
 DumpRegistered()
+
 
 # Install a signal handler that terminates our simple agent when
 # CTRL-C is pressed or a KILL signal is received
 def TermHandler(signum, frame):
 	global loop
 	loop = False
+
+
 signal.signal(signal.SIGINT, TermHandler)
 signal.signal(signal.SIGTERM, TermHandler)
+
 
 # Install a signal handler that dumps the state of all registered values
 # when SIGHUP is received
 def HupHandler(signum, frame):
 	DumpRegistered()
+
+
 signal.signal(signal.SIGHUP, HupHandler)
 
 # The simple agent's main loop. We loop endlessly until our signal
@@ -277,20 +286,38 @@ while (loop):
 	simpleTimeTicks.update(simpleTimeTicks.value() + 1)
 
 	# With counters, you can also call increment() on them
-	simpleCounter32Context2.increment() # By 1
-	simpleCounter64Context2.increment(5) # By 5
-	
+	simpleCounter32Context2.increment()  # By 1
+	simpleCounter64Context2.increment(5)  # By 5
+
 	# Following agent.start(), an external client may modify the table entries.
 	# If so, the entire row becomes "stale" and subsequent "TableRow1.setRowCell()" to any
 	# column in the stored row will likely cause A Segment violation.
-	# e.g.: 
+	# e.g.:
 	#      snmpset -v2c -c simple -M+. localhost:5555 SIMPLE-MIB::firstTable.1.2.2.97.97 s ZZZ
 	#      snmpset -v2c -c simple -M+. localhost:5555 SIMPLE-MIB::firstTable.1.2.2.97.97 s ZZZ
 	#
 	# As a workaround, Table.setRowColumn(row, col, data) was created to traverse rows from the table each time.
-	#firstTableRow1.setRowCell(3, agent.Integer32(555))
-	firstTable.setRowColumn(1, 3, agent.Integer32(555))
+	try:
+		firstTable.setRowColumn(1, 3, agent.Integer32(555))
+	except Exception as e:
+		print('Error from firstTable.setRowColumn: {:}'.format(e))
 
+	firstTable.setRowColumn(['aa'], 3, agent.Integer32(444))
+
+	# Another (better?) solution is to re-retrieve first row to mitigarte memory error
+	# Verify likely calling scenarios don't fail:
+	try:
+		firstTableRow1 = firstTable.getRow(1)
+	except Exception as e:
+		print('Error from firstTable.getRow({:}): {:}'.format(1, e))
+
+	firstTableRow1 = firstTable.getRow(agent.DisplayString("aa"))
+	firstTableRow1 = firstTable.getRow([agent.DisplayString("aa")])
+	firstTableRow1 = firstTable.getRow(['aa'])
+	firstTableRow1 = firstTable.getRow('aa')
+	firstTableRow1.setRowCell(3, agent.Integer32(77))
+
+	print('-------------- end of update --------------')
 
 print("{0}: Terminating.".format(prgname))
 agent.shutdown()

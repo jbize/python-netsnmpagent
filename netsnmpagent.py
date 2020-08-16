@@ -22,6 +22,7 @@ import sys, os, re, inspect, ctypes, socket, struct
 from collections import defaultdict
 from netsnmpapi import *
 import netsnmpvartypes
+from netsnmpvartypes import _VarType
 
 
 # Helper function courtesy of Alec Thomas and taken from
@@ -591,14 +592,15 @@ class netsnmpAgent(object):
 
 			def getRow(self, idxobjs):
 				'''Return existing TableRow in Table'''
-				return self._addRow(idxobjs, _getExistingRow=True)
+				return self._getOrAddRow(idxobjs, _getExistingRow=True)
 
 			def addRow(self, idxobjs):
 				'''Return a new TableRow in Table'''
-				return self._addRow(idxobjs)
+				return self._getOrAddRow(idxobjs)
 
-			def _addRow(self, idxobjs, _getExistingRow=False):
-				'''Return a new or existing TableRow in Table'''
+			def _getOrAddRow(self, idxobjs, _getExistingRow=False):
+				'''Return a new or existing TableRow in Table.
+				This was the original "getRow" method before the addition of "getRow".'''
 				dataset = self._dataset
 
 				# Define a Python class to provide access to the table row.
@@ -626,6 +628,9 @@ class netsnmpAgent(object):
 
 					@classmethod
 					def _fromExistingRow(cls, row):
+						if not bool(row):
+							raise netsnmpAgentException('Row not found!')
+
 						tableRow = cls.__new__(cls)
 						tableRow._table_row = row
 						return tableRow
@@ -749,6 +754,9 @@ class netsnmpAgent(object):
 
 			# Return the indices of the specified row as a dotted string.
 			def _getIndices(self, row):
+				if not bool(row):
+					return None
+
 				# snprint_objid() below requires a _full_ OID whereas the
 				# table row contains only the current row's identifer.
 				# Unfortunately, net-snmp does not have a ready function to
@@ -802,13 +810,16 @@ class netsnmpAgent(object):
 
 				return indices
 
-			# Following agent.start(), an external client may modify the table entries (SNMPSET).
-			# If so, the entire row becomes "stale" and subsequent "TableRow1.setRowCell()" to any
-			# column in the stored row will likely cause A Segment violation.
-			# As a workaround, this method was created to traverse rows from the table each time.
 			def _getRow(self, indices=[]):
+				'''Returns a NET-SNMP row.'''
+				if not isinstance(indices, list):
+					indices = [indices]
+				if isinstance(indices[0], _VarType):
+					matchStr = 	'.'.join(str(u(x._cvar.value)) for x in indices)
+				else:
+					matchStr = 	'.'.join(str(x) for x in indices)
+
 				row = self._dataset.contents.table.contents.first_row
-				matchStr = 	'.'.join(str(x) for x in indices)
 				rowIndices = self._getIndices(row)
 
 				while bool(row) and matchStr != rowIndices:
@@ -818,7 +829,23 @@ class netsnmpAgent(object):
 				return row
 
 			def setRowColumn(self, indices, colIdx, snmpobj):
+				'''This method was added to address a table row memory error.
+				
+				Following agent.start(), an external client may modify the table 
+				entries (SNMPSET). If so, the entire row becomes "stale" and 
+				subsequent "TableRow1.setRowCell()" to any column in the stored 
+				row will cause A Segment violation.
+				
+				As a workaround, this method was created to traverse rows from 
+				the table each time.
+				
+				However, a better approach in most cases is to use Table.getRow()
+				to retrieve a non-correpted TableRow, and then call the original
+				TableRow.setRowCell().
+				'''
 				row = self._getRow(indices)
+				if not bool(row):
+					raise netsnmpAgentException("setRowColumn() failed to find row for indices {0}!".format(indices))
 
 				result = libnsX.netsnmp_set_row_column(
 					row,
