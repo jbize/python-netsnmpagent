@@ -21,8 +21,8 @@ def b(s):
 def u(s):
 	""" Decodes byte strings to Unicode strings, if necessary. """
 
-	return s if isinstance(s, bytes) else s.decode(locale.getpreferredencoding())
-# 	return s if isinstance("Test", bytes) else s.decode(locale.getpreferredencoding())
+	# FIXME: Testing if "Test" is bytes is probably not very robust 
+	return s if isinstance("Test", bytes) else s.decode(locale.getpreferredencoding())
 
 c_sizet_p = ctypes.POINTER(ctypes.c_size_t)
 

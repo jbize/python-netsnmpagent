@@ -815,7 +815,9 @@ class netsnmpAgent(object):
 				if not isinstance(indices, list):
 					indices = [indices]
 				if isinstance(indices[0], _VarType):
-					matchStr = 	'.'.join(str(u(x._cvar.value)) for x in indices)
+# 					matchStr = 	'.'.join(str(u(x._cvar.value)) for x in indices)
+					# FIXME:  make this robust in case index is string or IP
+					matchStr = 	'.'.join(str(x._cvar.value) for x in indices)
 				else:
 					matchStr = 	'.'.join(str(x) for x in indices)
 
