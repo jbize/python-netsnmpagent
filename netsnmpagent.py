@@ -5,7 +5,6 @@
 #
 # Main module
 #
-
 """ Allows to write net-snmp subagents in Python.
 
 The Python bindings that ship with net-snmp support client operations
@@ -17,16 +16,18 @@ actually takes care of in its API's helpers.
 
 This module, by contrast, concentrates on wrapping the net-snmp C API
 for SNMP subagents in an easy manner. """
-
-import sys, os, re, inspect, ctypes, socket, struct
-from collections import defaultdict
-from netsnmpapi import *
-import netsnmpvartypes
-from netsnmpvartypes import _VarType
-
-
 # Helper function courtesy of Alec Thomas and taken from
 # http://stackoverflow.com/questions/36932/how-can-i-represent-an-enum-in-python
+
+from collections import defaultdict
+import sys, os, re, inspect, ctypes, socket, struct
+from threading import Lock
+
+from netsnmpapi import *
+from netsnmpvartypes import _VarType
+import netsnmpvartypes
+
+
 def enum(*sequential, **named):
 	enums = dict(zip(sequential, range(len(sequential))), **named)
 	try:
@@ -138,6 +139,10 @@ class netsnmpAgent(object):
 			setattr(self, key, args.get(key, defaults[key]))
 		if self.UseMIBFiles and self.MIBFiles is not None and type(self.MIBFiles) not in (list, tuple):
 			self.MIBFiles = (self.MIBFiles,)
+
+		# Support the queueing of traps to prevent duplicates sent from threads
+		self.queued_traps = []
+		self.trap_lock = Lock()
 
 		# Initialize status attribute -- until start() is called we will accept
 		# SNMP object registrations
@@ -923,6 +928,26 @@ class netsnmpAgent(object):
 		# to do proper cleanup and cause issues such as double free()s so that
 		# one effectively has to rely on the OS to release resources.
 		# libnsa.shutdown_agent()
+
+	def queue_trap(self, *args, **kwargs):
+		'''This method queues a trap to be sent from the main thread loop.
+		In SNMP v5.7.3 (and likely others), many traps sent from threads in agentx
+		sub-agents are duplicated.  This method and send_queued_traps() support
+		queueing traps in non-main threads and actually sending them from the
+		main thread in the "check_and_process loop."
+		'''
+		with self.trap_lock:
+			self.queued_traps.append((args, kwargs))
+
+	def send_queued_traps(self):
+		'''This method must be called from the main thread loop and dequeues and 
+		send all queued traps.
+		'''
+		with self.trap_lock:
+			for arg_tuple in self.queued_traps:
+				(args, kwargs) = arg_tuple
+				self.send_trap(*args, **kwargs)
+			self.queued_traps.clear()
 
 	def send_trap(self, *args, **kwargs):
 		'''Send SNMP traps

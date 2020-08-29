@@ -236,7 +236,8 @@ while (loop):
 	# Since we didn't give simpleCounter, simpleCounter64 and simpleTimeTicks
 	# a real meaning in the SIMPLE-MIB, we can basically do with them whatever
 	# we want. Here, we just increase them, although in different manners.
-	simpleCounter32.update(simpleCounter32.value() + 2)
+# 	simpleCounter32.update(simpleCounter32.value() + 2)
+	simpleCounter32.update(simpleCounter32.value() + 1)
 	simpleCounter64.update(simpleCounter64.value() + 4294967294)
 	simpleTimeTicks.update(simpleTimeTicks.value() + 1)
 
@@ -247,10 +248,12 @@ while (loop):
 	# agent.check_and_process() is trigering when trap is send so to disable endless loop
 	# there is flag set to skip sending trap on next check
 	if sendTrap:
+		print('Sending trap with simpleCounter32.value: {:}'.format(simpleCounter32.value()))
 		trapOid = 'SNMPv2-MIB::sysDescr'
 		trapData = [
 			{ 'oid':'SNMPv2-MIB::sysDescr.0', 'val':'test state' },
-			{ 'oid':'SIMPLE-MIB::simpleCounter64.0', 'val':1234567890L },
+			{ 'oid':'SIMPLE-MIB::simpleCounter32.0', 'val':simpleCounter32.value() },
+# 			{ 'oid':'SIMPLE-MIB::simpleCounter64.0', 'val':simpleCounter64.value() },
 		]
 		agent.send_trap(
 			oid = trapOid,
