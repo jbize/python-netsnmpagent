@@ -934,7 +934,7 @@ class netsnmpAgent(object):
 
 	def queue_trap(self, *args, **kwargs):
 		'''This method queues a trap to be sent from the main thread loop.
-		In SNMP v5.7.3 (and likely other version), many traps sent from threads 
+		In SNMP v5.7.3 (and likely other versions), many traps sent from threads 
 		in agentx sub-agents are duplicated.  This method and send_queued_traps() 
 		support queueing traps in non-main threads and actually sending them from 
 		the main thread in the "check_and_process loop."
@@ -946,13 +946,14 @@ class netsnmpAgent(object):
 		'''This method must be called from the main thread loop and dequeues and 
 		send all queued traps.
 		'''
-		if not len(self.queued_traps):
+		if not self.queued_traps:
 			return
 		with self.trap_lock:
 			for arg_tuple in self.queued_traps:
 				(args, kwargs) = arg_tuple
 				self.send_trap(*args, **kwargs)
-			self.queued_traps.clear()
+			self.queued_traps.clear()  # Python 3.3+
+# 			self.queued_traps *= 0
 
 	def send_trap(self, *args, **kwargs):
 		'''Send SNMP traps
