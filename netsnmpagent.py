@@ -952,7 +952,8 @@ class netsnmpAgent(object):
 			for arg_tuple in self.queued_traps:
 				(args, kwargs) = arg_tuple
 				self.send_trap(*args, **kwargs)
-			self.queued_traps.clear()  # Python 3.3+
+# 			self.queued_traps.clear()  # Python 3.3+
+			del self.queued_traps[:]  # more universal
 # 			self.queued_traps *= 0
 
 	def send_trap(self, *args, **kwargs):
